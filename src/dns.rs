@@ -8,26 +8,6 @@ use std::net::UdpSocket;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
-/* 
-#[derive(Clone)]
-pub struct SharedCatalog(pub Arc<RwLock<Catalog>>);
-
-#[async_trait]
-impl RequestHandler for SharedCatalog {
-    async fn handle_request<R>(
-        &self,
-        request: &Request,
-        response_handle: R,
-    ) -> ResponseInfo
-    where
-        R: ResponseHandler + Send,
-    {
-        let catalog = self.0.read().await;
-        catalog.handle_request(request, response_handle).await
-    }
-}
-*/
-
 #[derive(Clone)]
 pub struct SharedCatalog(pub Arc<RwLock<Catalog>>);
 
@@ -53,6 +33,7 @@ pub struct DnsState {
 }
 
 impl DnsState {
+    // constructor builds the in memory authority, origin server, and catalog
     pub fn new() -> anyhow::Result<Self> {
         let origin = LowerName::new(&Name::from_ascii("example.com.")?);
         let authority = Arc::new(InMemoryAuthority::empty(origin.clone().into(), ZoneType::Primary, false));
@@ -67,13 +48,28 @@ impl DnsState {
         })
     }
 
-    pub async fn add_record(&self, name: String, value: String, ttl: u32) -> anyhow::Result<()> {
+    fn build_a_record(name: String, value: String, ttl: u32) -> anyhow::Result<Record> {
         let fqdn = Name::from_ascii(&name)?;
         let ip = value.parse()?;
         let record = Record::from_rdata(fqdn, ttl, RData::A(ip));
+        Ok(record)
+    }
+
+    // add a record to the dns server
+    pub async fn add_record(&self, name: String, value: String, ttl: u32) -> anyhow::Result<()> {
+        let record = DnsState::build_a_record(name, value, ttl)?;
         self.authority.upsert(record, 0).await;
         Ok(())
     }
+
+    // delete a record from the dns server
+/*     pub async fn delete_record(&self, name: String) {
+        let record = DnsState::build_a_record(name, value, ttl);
+
+        self.authority.records_mut().await.remove_entry(key)
+        Ok(())
+    } */
+
 
     pub fn catalog(&self) -> Arc<RwLock<Catalog>> {
         self.catalog.clone()

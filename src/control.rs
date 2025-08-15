@@ -1,9 +1,8 @@
 use tonic::{Request, Response, Status};
-use dns_control_server::DnsControl;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
-use crate::dns::DnsState;
+use crate::{control::dns_control_server::DnsControl, dns::DnsState};
 
 tonic::include_proto!("control");
 
@@ -24,7 +23,7 @@ impl DnsControl for ControlServer {
         request: Request<AddRecordRequest>,
     ) -> Result<Response<ControlResponse>, Status> {
         let req = request.into_inner();
-        let mut state = self.state.write().await;
+        let state = self.state.write().await;
         match state.add_record(req.name, req.value, req.ttl).await {
             Ok(_) => Ok(Response::new(ControlResponse {
                 success: true,
