@@ -2,8 +2,6 @@
 
 This project implements a lightweight DNS server in Rust using [`hickory-server`](https://docs.rs/hickory-server) and exposes a gRPC API using [`tonic`](https://docs.rs/tonic). It allows dynamic management of DNS A records via RPC calls, enabling integrations or external controllers to modify DNS state at runtime.
 
----
-
 ## 🚀 Features
 
 - 🧠 In-memory authoritative DNS server
@@ -13,8 +11,6 @@ This project implements a lightweight DNS server in Rust using [`hickory-server`
 - 🔧 Modular structure for DNS and control layers
 - 🧪 Built-in support for testing with tools like Insomnia or `grpcurl`
 
----
-
 ## 🛠 Requirements
 
 - **Rust** (latest stable recommended)
@@ -23,10 +19,10 @@ This project implements a lightweight DNS server in Rust using [`hickory-server`
 ### Install `protoc`
 
 **On macOS:**
-
-## 📁 Project Structure
 ```sh
 brew install protobuf
+
+## 📁 Project Structure
 
 .
 ├── main.rs              # Entry point, starts DNS + gRPC servers
