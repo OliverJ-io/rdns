@@ -16,6 +16,8 @@ use std::str::FromStr;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
+use crate::settings::DnsSettings;
+
 /// Wrapper around a shared, asynchronously accessible DNS catalog.
 #[derive(Clone)]
 pub struct SharedCatalog(pub Arc<RwLock<Catalog>>);
@@ -33,6 +35,19 @@ impl RequestHandler for SharedCatalog {
     {
         let catalog = self.0.read().await;
         catalog.handle_request(request, response_handle).await
+    }
+}
+
+/// Encapsulates DNS server configuration options
+pub struct DnsOptions {
+    pub listen_addr: String,
+}
+
+impl From<DnsSettings> for DnsOptions {
+    fn from(cfg: DnsSettings) -> Self {
+        DnsOptions {
+            listen_addr: cfg.listen_addr,
+        }
     }
 }
 
@@ -94,8 +109,7 @@ impl DnsState {
     }
 }
 
-
-/// Starts the DNS server on UDP port 8053 using the provided `DnsState`.
+/// Starts the DNS server on the configured UDP port using the provided `DnsState`.
 ///
 /// Binds a UDP socket, wraps it in a `tokio::net::UdpSocket`, and launches
 /// the `ServerFuture` from the hickory-server crate to handle requests.
@@ -103,8 +117,9 @@ impl DnsState {
 /// # Errors
 ///
 /// Returns an error if the socket binding, conversion, or server execution fails.
-pub async fn run_dns_server(state: Arc<RwLock<DnsState>>) -> anyhow::Result<()> {
-    let std_socket = UdpSocket::bind("0.0.0.0:8053")?;
+pub async fn run_dns_server(state: Arc<RwLock<DnsState>>, options: DnsOptions) -> anyhow::Result<()> {
+    let addr = options.listen_addr.clone();
+    let std_socket = UdpSocket::bind(&addr)?;
     std_socket.set_nonblocking(true)?;
     let tokio_socket = tokio::net::UdpSocket::from_std(std_socket)?;
 
@@ -117,7 +132,7 @@ pub async fn run_dns_server(state: Arc<RwLock<DnsState>>) -> anyhow::Result<()> 
     let mut server = ServerFuture::new(handler);
     server.register_socket(tokio_socket);
 
-    println!("DNS server listening on 0.0.0.0:8053 (UDP)");
+    println!("DNS server listening on {} (UDP)",&addr);
     server.block_until_done().await?;
     Ok(())
 }

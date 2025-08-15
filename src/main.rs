@@ -8,13 +8,16 @@
 
 mod control;
 mod dns;
+mod settings;
 
+use settings::Settings;
 use control::ControlServer;
 use dns::DnsState;
-use tonic::transport::Server;
-use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::sync::RwLock;
+
+use crate::control::GrpcOptions;
+use crate::dns::DnsOptions;
 
 /// Main entry point. Initializes shared state and starts both DNS and gRPC servers.
 ///
@@ -29,27 +32,31 @@ use tokio::sync::RwLock;
 /// - Starts the gRPC server on port 50051 and blocks the main thread.
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    // load config settings
+    let settings = load_settings().expect("Failed to load config");
+    let dns_options = DnsOptions::from(settings.dns);
+    let grpc_options = GrpcOptions::from(settings.grpc);
+
     // Initialize shared DNS state with in-memory authority
     let dns_state = Arc::new(RwLock::new(DnsState::new()?));
 
     // Spawn the DNS server in a background task
     {
         let dns_state = dns_state.clone();
-        println!("Starting DNS server...");
         tokio::spawn(async move {
-            dns::run_dns_server(dns_state).await.unwrap();
+            dns::run_dns_server(dns_state.clone(),dns_options).await.unwrap();
         });
     }
 
-    // Configure and start the gRPC server for DNS control
-    let grpc_addr: SocketAddr = "0.0.0.0:50051".parse()?;
-    let grpc_service = ControlServer::new(dns_state);
-
-    println!("gRPC server listening on {}", grpc_addr);
-    Server::builder()
-        .add_service(control::dns_control_server::DnsControlServer::new(grpc_service))
-        .serve(grpc_addr)
-        .await?;
+    control::run_grpc_server(ControlServer::new(dns_state), grpc_options).await?;
 
     Ok(())
+}
+
+/// load settings from the Config.toml file
+fn load_settings() -> Result<Settings, config::ConfigError> {
+    let builder = config::Config::builder()
+        .add_source(config::File::with_name("Config"))
+        .add_source(config::Environment::with_prefix("APP").separator("__")); // optional
+    builder.build()?.try_deserialize()
 }

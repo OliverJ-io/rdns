@@ -1,0 +1,6 @@
+# Config.toml
+[dns]
+listen_addr = "0.0.0.0:8053"
+
+[grpc]
+listen_addr = "0.0.0.0:50051"

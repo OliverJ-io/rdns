@@ -3,11 +3,11 @@
 //! Provides a `DnsControl` gRPC server implementation that allows adding and
 //! deleting DNS records in a shared `DnsState` through protobuf requests.
 
-use tonic::{Request, Response, Status};
-use std::sync::Arc;
+use tonic::{transport::Server, Request, Response, Status};
+use std::{net::SocketAddr, sync::Arc};
 use tokio::sync::RwLock;
 
-use crate::{control::dns_control_server::DnsControl, dns::DnsState};
+use crate::{control::dns_control_server::DnsControl, dns::DnsState, settings::GrpcSettings};
 
 // Generated protobuf code for the `control` service.
 // Includes the request/response types and the DnsControl trait.
@@ -23,6 +23,18 @@ impl ControlServer {
     /// Constructs a new `ControlServer` with shared DNS state
     pub fn new(state: Arc<RwLock<DnsState>>) -> Self {
         Self { state }
+    }
+}
+
+/// Config options for the Grpc Control Server
+pub struct GrpcOptions {
+    pub listen_addr: String,
+}
+impl From<GrpcSettings> for GrpcOptions {
+    fn from(cfg: GrpcSettings) -> Self {
+        GrpcOptions {
+            listen_addr: cfg.listen_addr,
+        }
     }
 }
 
@@ -77,4 +89,14 @@ impl DnsControl for ControlServer {
             })),
         }
     }
+}
+
+pub async fn run_grpc_server(service: ControlServer, options: GrpcOptions) -> anyhow::Result<()> {
+    let addr: SocketAddr = options.listen_addr.parse()?;
+    println!("gRPC server listening on {}", addr);
+    Server::builder()
+        .add_service(dns_control_server::DnsControlServer::new(service))
+        .serve(addr)
+        .await?;
+    Ok(())
 }
