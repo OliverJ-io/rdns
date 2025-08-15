@@ -4,12 +4,17 @@ package control;
 
 service DnsControl {
   rpc AddRecord (AddRecordRequest) returns (ControlResponse);
+  rpc DeleteRecord (DeleteRecordRequest) returns (ControlResponse);
 }
 
 message AddRecordRequest {
   string name = 1;
   string value = 2;
   uint32 ttl = 3;
+}
+
+message DeleteRecordRequest {
+  string name = 1;
 }
 
 message ControlResponse {
