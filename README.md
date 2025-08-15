@@ -20,7 +20,8 @@ This project implements a lightweight DNS server in Rust using [`hickory-server`
 
 **On macOS:**
 ```sh
-brew install protobuf```
+brew install protobuf
+```
 
 ## 📁 Project Structure
 
