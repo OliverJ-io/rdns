@@ -25,10 +25,11 @@ brew install protobuf
 
 ## 📁 Project Structure
 
-.
+```.
 ├── main.rs              # Entry point, starts DNS + gRPC servers
 ├── dns.rs               # In-memory DNS state and server logic
 ├── control.rs           # gRPC server + request handlers
 ├── proto/control.proto  # gRPC interface definition
 ├── build.rs             # Protobuf compilation
 └── README.md            # This file
+```
