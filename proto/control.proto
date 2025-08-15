@@ -5,6 +5,13 @@ package control;
 service DnsControl {
   rpc AddRecord (AddRecordRequest) returns (ControlResponse);
   rpc DeleteRecord (DeleteRecordRequest) returns (ControlResponse);
+  rpc GetAllRecords (Empty) returns (GetAllRecordsResponse);
+}
+
+message DnsRecord {
+  string name = 1;
+  string value = 2;
+  uint32 ttl = 3;
 }
 
 message AddRecordRequest {
@@ -15,6 +22,12 @@ message AddRecordRequest {
 
 message DeleteRecordRequest {
   string name = 1;
+}
+
+message Empty {}
+
+message GetAllRecordsResponse {
+  repeated DnsRecord records = 1;
 }
 
 message ControlResponse {

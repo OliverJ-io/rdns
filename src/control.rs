@@ -89,6 +89,23 @@ impl DnsControl for ControlServer {
             })),
         }
     }
+
+    async fn get_all_records(
+        &self,
+        _request: Request<Empty>,
+    ) -> Result<Response<GetAllRecordsResponse>, Status> {
+        let state = self.state.read().await;
+        let records = state.get_all_records().await;
+
+        let proto_records = records
+            .into_iter()
+            .map(|(name, value, ttl)| DnsRecord { name, value, ttl })
+            .collect();
+
+        Ok(Response::new(GetAllRecordsResponse {
+            records: proto_records,
+        }))
+    }
 }
 
 pub async fn run_grpc_server(service: ControlServer, options: GrpcOptions) -> anyhow::Result<()> {

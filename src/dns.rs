@@ -103,6 +103,26 @@ impl DnsState {
         Ok(())
     }
 
+    /// Gets all A records from the in-memory DNS zone (exludes RRSIGS)
+    pub async fn get_all_records(&self) -> Vec<(String, String, u32)> {
+        let records = self.authority.records_mut().await;
+
+        let mut result = Vec::new();
+        for (_key, record_set) in records.iter() {
+            for record in record_set.records_without_rrsigs() {
+                if let Some(RData::A(ip)) = record.data() {
+                    result.push((
+                        record.name().to_string(),
+                        ip.to_string(),
+                        record.ttl(),
+                    ));
+                }
+            }
+        }
+
+        result
+    }
+
     /// Returns a clone of the internal DNS catalog reference.
     pub fn catalog(&self) -> Arc<RwLock<Catalog>> {
         self.catalog.clone()
