@@ -56,7 +56,7 @@ async fn main() -> anyhow::Result<()> {
 /// load settings from the Config.toml file
 fn load_settings() -> Result<Settings, config::ConfigError> {
     let builder = config::Config::builder()
-        .add_source(config::File::with_name("Config"))
+        .add_source(config::File::with_name("Config").required(false))
         .add_source(config::Environment::with_prefix("APP").separator("__")); // optional
     builder.build()?.try_deserialize()
 }
